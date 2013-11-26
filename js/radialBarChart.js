@@ -11,6 +11,8 @@ function radialBarChart() {
   var colorLabels = false;
   var tickCircleValues = [];
   var transitionDuration = 1000;
+  var showAxis = false;
+  var backgroundOpacity = 0;
 
   // Scales & other useful things
   var numBars = null;
@@ -55,7 +57,7 @@ function radialBarChart() {
       .append('circle')
       .attr('r', function(d) {return barScale(d);})
       .style('fill', 'none');
-  }
+}
 
   function renderOverlays(container) {
     var g = d3.select(container).select('svg g.radial-barchart');
@@ -71,13 +73,15 @@ function radialBarChart() {
       .attr('transform', function(d, i) {return svgRotate(i * 360 / numBars);});
 
     // Axis
-    var axisScale = d3.scale.linear().domain(domain).range([0, -barHeight]);
-    var axis = d3.svg.axis().scale(axisScale).orient('right');
-    if(tickValues)
-      axis.tickValues(tickValues);
-    g.append('g')
-      .classed('axis', true)
-      .call(axis);
+    if (showAxis) {
+        var axisScale = d3.scale.linear().domain(domain).range([0, -barHeight]);
+        var axis = d3.svg.axis().scale(axisScale).orient('right');
+        if (tickValues)
+            axis.tickValues(tickValues);
+        g.append('g')
+          .classed('axis', true)
+          .call(axis);
+    }
 
     // Outer circle
     g.append('circle')
@@ -99,7 +103,7 @@ function radialBarChart() {
       .enter()
       .append('text')
       .style('text-anchor', 'middle')
-      .style('fill', function(d, i) {return colorLabels ? barColors[i % barColors.length] : null;})
+      .style('fill', function (d, i) { return colorLabels ? barColors[i % barColors.length] : null; })
       .append('textPath')
       .attr('xlink:href', '#label-path')
       .attr('startOffset', function(d, i) {return i * 100 / numBars + 50 / numBars + '%';})
@@ -160,6 +164,26 @@ function radialBarChart() {
         .transition()
         .duration(transitionDuration)
         .attr('d', d3.svg.arc().innerRadius(0).outerRadius(or).startAngle(sa).endAngle(ea))
+
+      // add background colour
+      if (backgroundOpacity > 0) {
+        var bg = g.append("g")
+          .attr("class", "bg")
+          .selectAll('path')
+          .data(function (d) {
+              var m = d3.map(d[0].data);
+              return m.values();
+          })
+          .enter()
+          .append('path')
+          .style('fill', function (d, i) {
+              if (!barColors) return;
+              return barColors[i % barColors.length];
+          })
+          .style("opacity", 0.3)
+          .attr('d', d3.svg.arc().innerRadius(or).outerRadius(barHeight).startAngle(sa).endAngle(ea));
+      }
+
 
       if(!update)
         renderOverlays(this);
@@ -237,6 +261,18 @@ function radialBarChart() {
     if (!arguments.length) return transitionDuration;
     transitionDuration = _;
     return chart;   
+  };
+
+  chart.showAxis = function (_) {
+    if (!arguments.length) return showAxis;
+    showAxis = _;
+    return chart;
+  };
+
+  chart.backgroundOpacity = function(_) {
+    if (!arguments.length) return backgroundOpacity;
+    backgroundOpacity = _;
+    return chart;
   };
 
   return chart;
